@@ -25,16 +25,6 @@ public enum HorizontalAxis {
         vector.add(new Vector(this == X ? value : 0, 0, this == Z ? value : 0));
     }
 
-    public int calculateModToRightHand(@NotNull BlockFace face) {
-        Preconditions.checkNotNull(face, "face");
-
-        if(this == X) {
-            return face == BlockFace.NORTH ? -1 : (face == BlockFace.SOUTH ? 1 : 0);
-        } else {
-            return face == BlockFace.WEST ? 1 : (face == BlockFace.EAST ? -1 : 0);
-        }
-    }
-
     public void validateFace(@NotNull BlockFace face) {
         Preconditions.checkNotNull(face, "face is null!");
 

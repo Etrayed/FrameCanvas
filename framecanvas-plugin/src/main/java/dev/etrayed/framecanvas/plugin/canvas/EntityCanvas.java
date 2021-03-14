@@ -132,6 +132,7 @@ public class EntityCanvas implements Canvas {
         return displayImage(null, image);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public @NotNull CompletableFuture<Void> displayImage(@Nullable Player player, @NotNull Image image) {
         Preconditions.checkNotNull(image, "image");
@@ -219,6 +220,7 @@ public class EntityCanvas implements Canvas {
         return global;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void verifyFrames() {
         Map<Integer, ItemFrame> availableFrames = new HashMap<>();
