@@ -45,4 +45,11 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <distributionManagement>
+        <repository>
+            <id>github-pkgs</id>
+            <url>https://maven.pkg.github.com/Etrayed/FrameCanvas/</url>
+        </repository>
+    </distributionManagement>
 </project>
