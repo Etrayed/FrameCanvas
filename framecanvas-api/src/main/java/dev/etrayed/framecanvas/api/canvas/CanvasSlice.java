@@ -2,9 +2,7 @@ package dev.etrayed.framecanvas.api.canvas;
 
 import dev.etrayed.framecanvas.api.canvas.click.Clickable;
 import org.bukkit.Location;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
 /**
@@ -23,10 +21,6 @@ public interface CanvasSlice extends Drawable, Clickable {
 
     @NotNull
     Location location();
-
-    boolean isDirty();
-
-    boolean isDirty(@Nullable Player player);
 
     boolean isEmpty();
 }

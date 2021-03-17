@@ -40,9 +40,9 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
     private final List<ClickListener> listeners;
 
-    private DirtyBuffer buffer; // only if global == true
+    private byte[] buffer; // only if global == true
 
-    private Map<Player, DirtyBuffer> contextualBuffer; // only if global == false
+    private Map<Player, byte[]> contextualBuffer; // only if global == false
 
     ItemFrameSlice(EntityCanvas canvas, int x, int y, boolean global) {
         super(!global);
@@ -115,8 +115,6 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         ensureBuffer();
 
         obtainBuffer(player)[y * 128 + x] = color;
-
-        setDirty(x, y, player);
     }
 
     @Override
@@ -129,9 +127,6 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         ensureBuffer();
 
         Arrays.fill(obtainBuffer(player), color);
-
-        setDirty(0, 0, player);
-        setDirty(127, 127, player);
     }
 
     @Override
@@ -147,9 +142,6 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         ensureBuffer();
 
         System.arraycopy(colors, 0, obtainBuffer(player), 0, BUFFER_SIZE);
-
-        setDirty(0, 0, player);
-        setDirty(127, 127, player);
     }
 
     private void ensureBuffer() {
@@ -158,7 +150,7 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         }
 
         if(global) {
-            buffer = new DirtyBuffer();
+            buffer = new byte[BUFFER_SIZE];
         } else {
             contextualBuffer = Collections.synchronizedMap(new WeakHashMap<>());
         }
@@ -179,45 +171,7 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     }
 
     private byte[] obtainBuffer(@Nullable Player player) {
-        return global || player == null ? buffer.buffer : contextualBuffer.computeIfAbsent(player, unused -> new DirtyBuffer()).buffer;
-    }
-
-    @Override
-    public boolean isDirty() {
-        return isDirty(null);
-    }
-
-    @Override
-    public boolean isDirty(@Nullable Player player) {
-        return Optional.ofNullable(global || player == null ? buffer : contextualBuffer.get(player))
-                .map(theBuffer -> theBuffer.lowDirtyX == -1).orElse(Boolean.FALSE);
-    }
-
-    private void setDirty(int x, int y, @Nullable Player player) {
-        DirtyBuffer buffer = global || player == null ? this.buffer : contextualBuffer.get(player);
-
-        if(buffer == null) {
-            return;
-        }
-
-        if(x == -1 && y == -1) {
-            buffer.lowDirtyX = -1;
-            buffer.lowDirtyY = -1;
-            buffer.highDirtyX = -1;
-            buffer.highDirtyY = - 1;
-        } else {
-            if(buffer.lowDirtyX == -1) {
-                buffer.lowDirtyX = x;
-                buffer.lowDirtyY = y;
-                buffer.highDirtyX = x;
-                buffer.highDirtyY = y;
-            } else {
-                buffer.lowDirtyX = Math.min(x, buffer.lowDirtyX);
-                buffer.lowDirtyY = Math.min(y, buffer.lowDirtyY);
-                buffer.highDirtyX = Math.max(x, buffer.highDirtyX);
-                buffer.highDirtyY = Math.max(y, buffer.highDirtyY);
-            }
-        }
+        return global || player == null ? buffer : contextualBuffer.computeIfAbsent(player, unused -> new byte[BUFFER_SIZE]);
     }
 
     @Override
@@ -290,22 +244,14 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         map.getRenderers().stream().filter(renderer -> renderer != this).forEach(map::removeRenderer);
     }
 
-    private int renderFallTrough;
-
     @Override
     public void render(MapView map, MapCanvas canvas, Player player) {
-        player = isContextual() ? player : null;
-
-        if(isEmpty() || (renderFallTrough < 10 && !isDirty(player))) {
-            renderFallTrough++;
-
+        if(isEmpty()) {
             return;
         }
 
-        renderFallTrough = 0;
-
         try {
-            omitBuffer(player, canvas);
+            omitBuffer(isContextual() ? player : null, canvas);
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -320,26 +266,13 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
             initReflectiveCanvasFields(canvas);
         }
 
-        DirtyBuffer buffer = global || player == null ? this.buffer : contextualBuffer.get(player);
-
-        int lowDirtyX = buffer.lowDirtyX, lowDirtyY = buffer.lowDirtyY, highDirtyX = buffer.highDirtyX, highDirtyY = buffer.highDirtyY;
-
-        if(lowDirtyX == -1) { // seems like we're forced to update everything
-            lowDirtyX = 0;
-            lowDirtyY = 0;
-            highDirtyX = 127;
-            highDirtyY = 127;
-        }
-
-        setDirty(-1, -1, player);
-
         //noinspection SuspiciousSystemArraycopy
-        System.arraycopy(buffer.buffer, 0, bufferField.get(canvas), 0, BUFFER_SIZE);
+        System.arraycopy(obtainBuffer(player), 0, bufferField.get(canvas), 0, BUFFER_SIZE);
 
         Object worldMapInstance = worldMapField.get(canvas.getMapView());
 
-        flagDirtyMethod.invoke(worldMapInstance, lowDirtyX, lowDirtyY);
-        flagDirtyMethod.invoke(worldMapInstance, highDirtyX, highDirtyY);
+        flagDirtyMethod.invoke(worldMapInstance, 0, 0);
+        flagDirtyMethod.invoke(worldMapInstance, 127, 127);
     }
 
     private void initReflectiveCanvasFields(MapCanvas canvas) throws ReflectiveOperationException {
@@ -350,17 +283,5 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         bufferField.setAccessible(true);
         worldMapField.setAccessible(true);
         flagDirtyMethod.setAccessible(true);
-    }
-
-    private static final class DirtyBuffer {
-
-        private final byte[] buffer;
-
-        private int lowDirtyX = -1, lowDirtyY = -1, highDirtyX = -1, highDirtyY = -1;
-
-        @SuppressWarnings("CheckForOutOfMemoryOnLargeArrayAllocation")
-        private DirtyBuffer() {
-            this.buffer = new byte[BUFFER_SIZE];
-        }
     }
 }
