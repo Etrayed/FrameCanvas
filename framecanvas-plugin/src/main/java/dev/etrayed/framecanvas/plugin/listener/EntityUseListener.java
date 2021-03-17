@@ -1,6 +1,7 @@
 package dev.etrayed.framecanvas.plugin.listener;
 
 import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
@@ -18,7 +19,7 @@ public class EntityUseListener extends PacketAdapter {
     private final FrameCanvasPlugin plugin;
 
     public EntityUseListener(FrameCanvasPlugin plugin) {
-        super(plugin, PacketType.Play.Client.USE_ENTITY);
+        super(plugin, ListenerPriority.MONITOR, PacketType.Play.Client.USE_ENTITY);
 
         this.plugin = plugin;
     }
@@ -38,6 +39,7 @@ public class EntityUseListener extends PacketAdapter {
             return;
         }
 
+        event.setReadOnly(false);
         event.setCancelled(true);
 
         if(!canvas.hasListeners().get()) {

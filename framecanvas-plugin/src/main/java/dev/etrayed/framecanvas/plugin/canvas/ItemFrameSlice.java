@@ -24,7 +24,6 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Etrayed
@@ -117,7 +116,7 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
         obtainBuffer(player)[y * 128 + x] = color;
 
-        setDirty(true, player);
+        setDirty(x, y, player);
     }
 
     @Override
@@ -131,7 +130,8 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
         Arrays.fill(obtainBuffer(player), color);
 
-        setDirty(true, player);
+        setDirty(0, 0, player);
+        setDirty(127, 127, player);
     }
 
     @Override
@@ -148,7 +148,8 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
         System.arraycopy(colors, 0, obtainBuffer(player), 0, BUFFER_SIZE);
 
-        setDirty(true, player);
+        setDirty(0, 0, player);
+        setDirty(127, 127, player);
     }
 
     private void ensureBuffer() {
@@ -189,13 +190,34 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     @Override
     public boolean isDirty(@Nullable Player player) {
         return Optional.ofNullable(global || player == null ? buffer : contextualBuffer.get(player))
-                .map(theBuffer -> theBuffer.dirty.get()).orElse(Boolean.FALSE);
+                .map(theBuffer -> theBuffer.lowDirtyX == -1).orElse(Boolean.FALSE);
     }
 
-    private void setDirty(boolean dirty, @Nullable Player player) {
-        AtomicBoolean atomicDirty = global || player == null ? buffer.dirty : contextualBuffer.get(player).dirty;
+    private void setDirty(int x, int y, @Nullable Player player) {
+        DirtyBuffer buffer = global || player == null ? this.buffer : contextualBuffer.get(player);
 
-        atomicDirty.set(dirty);
+        if(buffer == null) {
+            return;
+        }
+
+        if(x == -1 && y == -1) {
+            buffer.lowDirtyX = -1;
+            buffer.lowDirtyY = -1;
+            buffer.highDirtyX = -1;
+            buffer.highDirtyY = - 1;
+        } else {
+            if(buffer.lowDirtyX == -1) {
+                buffer.lowDirtyX = x;
+                buffer.lowDirtyY = y;
+                buffer.highDirtyX = x;
+                buffer.highDirtyY = y;
+            } else {
+                buffer.lowDirtyX = Math.min(x, buffer.lowDirtyX);
+                buffer.lowDirtyY = Math.min(y, buffer.lowDirtyY);
+                buffer.highDirtyX = Math.max(x, buffer.highDirtyX);
+                buffer.highDirtyY = Math.max(y, buffer.highDirtyY);
+            }
+        }
     }
 
     @Override
@@ -298,15 +320,26 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
             initReflectiveCanvasFields(canvas);
         }
 
-        setDirty(false, player);
+        DirtyBuffer buffer = global || player == null ? this.buffer : contextualBuffer.get(player);
+
+        int lowDirtyX = buffer.lowDirtyX, lowDirtyY = buffer.lowDirtyY, highDirtyX = buffer.highDirtyX, highDirtyY = buffer.highDirtyY;
+
+        if(lowDirtyX == -1) { // seems like we're forced to update everything
+            lowDirtyX = 0;
+            lowDirtyY = 0;
+            highDirtyX = 127;
+            highDirtyY = 127;
+        }
+
+        setDirty(-1, -1, player);
 
         //noinspection SuspiciousSystemArraycopy
-        System.arraycopy(obtainBuffer(player), 0, bufferField.get(canvas), 0, BUFFER_SIZE);
+        System.arraycopy(buffer.buffer, 0, bufferField.get(canvas), 0, BUFFER_SIZE);
 
         Object worldMapInstance = worldMapField.get(canvas.getMapView());
 
-        flagDirtyMethod.invoke(worldMapInstance, 0, 0);
-        flagDirtyMethod.invoke(worldMapInstance, 127, 127); // we dont care, we'll flag the entire map
+        flagDirtyMethod.invoke(worldMapInstance, lowDirtyX, lowDirtyY);
+        flagDirtyMethod.invoke(worldMapInstance, highDirtyX, highDirtyY);
     }
 
     private void initReflectiveCanvasFields(MapCanvas canvas) throws ReflectiveOperationException {
@@ -323,12 +356,11 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
         private final byte[] buffer;
 
-        private final AtomicBoolean dirty;
+        private int lowDirtyX = -1, lowDirtyY = -1, highDirtyX = -1, highDirtyY = -1;
 
         @SuppressWarnings("CheckForOutOfMemoryOnLargeArrayAllocation")
         private DirtyBuffer() {
             this.buffer = new byte[BUFFER_SIZE];
-            this.dirty = new AtomicBoolean();
         }
     }
 }
