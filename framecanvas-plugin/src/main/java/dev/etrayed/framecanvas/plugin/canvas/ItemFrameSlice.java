@@ -96,7 +96,11 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
             for (int x = 0; x < 128; x++) {
                 for (int y = 0; y < 128; y++) {
-                    setPixel(player, x, y, imageBytes[y * 128 + x]);
+                    byte imgByte = imageBytes[y * 128 + x];
+
+                    if(imgByte != MapPalette.TRANSPARENT) {
+                        setPixel(player, x, y, imgByte);
+                    }
                 }
             }
         });

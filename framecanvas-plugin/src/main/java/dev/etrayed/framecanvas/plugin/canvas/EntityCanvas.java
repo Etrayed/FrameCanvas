@@ -143,7 +143,11 @@ public class EntityCanvas implements Canvas {
             for (CanvasSlice slice : slices) {
                 for (int x = 0; x < 128; x++) {
                     for (int y = 0; y < 128; y++) {
-                        slice.setPixel(player, x, y, imageBytes[(slice.y() * 128 + y) * 128 * this.width + slice.x() * 128 + x]);
+                        byte imgByte = imageBytes[(slice.y() * 128 + y) * 128 * this.width + slice.x() * 128 + x];
+
+                        if(imgByte != MapPalette.TRANSPARENT) {
+                            slice.setPixel(player, x, y, imgByte);
+                        }
                     }
                 }
             }
