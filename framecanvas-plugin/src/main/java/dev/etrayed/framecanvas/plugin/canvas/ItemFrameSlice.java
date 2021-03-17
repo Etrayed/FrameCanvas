@@ -196,12 +196,19 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
     @Override
     public boolean isEmpty() {
-        return buffer == null;
+        return (global ? buffer : contextualBuffer) == null;
     }
 
     @Override
     public boolean isGlobal() {
         return global;
+    }
+
+    @Override
+    public void clear(@NotNull Player player) {
+        Preconditions.checkNotNull(player, "player");
+
+        contextualBuffer.remove(player);
     }
 
     @Override
@@ -263,7 +270,7 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     public void render(MapView map, MapCanvas canvas, Player player) {
         player = isContextual() ? player : null;
 
-        if(isEmpty() || (!isDirty(player) && renderFallTrough < 10)) {
+        if(isEmpty() || (renderFallTrough < 10 && !isDirty(player))) {
             renderFallTrough++;
 
             return;

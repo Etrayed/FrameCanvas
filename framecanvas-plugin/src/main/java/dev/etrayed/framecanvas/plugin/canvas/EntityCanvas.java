@@ -220,6 +220,15 @@ public class EntityCanvas implements Canvas {
         return global;
     }
 
+    @Override
+    public void clear(@NotNull Player player) {
+        Preconditions.checkNotNull(player, "player");
+
+        for (ItemFrameSlice slice : slices) {
+            slice.clear(player);
+        }
+    }
+
     @SuppressWarnings("deprecation")
     @Override
     public void verifyFrames() {
