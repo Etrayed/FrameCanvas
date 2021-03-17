@@ -19,10 +19,16 @@ public enum HorizontalAxis {
         return this == X ? vector.getBlockX() : vector.getBlockZ();
     }
 
-    public void addValue(@NotNull Vector vector, int value) {
+    public void addValue(@NotNull Vector vector, @NotNull BlockFace face, int value) {
         Preconditions.checkNotNull(vector, "vector");
 
-        vector.add(new Vector(this == X ? value : 0, 0, this == Z ? value : 0));
+        validateFace(face);
+
+        if(face == BlockFace.EAST || face == BlockFace.NORTH) {
+            vector.subtract(new Vector(this == X ? value : 0, 0, this == Z ? value : 0));
+        } else if(face == BlockFace.WEST || face == BlockFace.SOUTH) {
+            vector.add(new Vector(this == X ? value : 0, 0, this == Z ? value : 0));
+        }
     }
 
     public void validateFace(@NotNull BlockFace face) {

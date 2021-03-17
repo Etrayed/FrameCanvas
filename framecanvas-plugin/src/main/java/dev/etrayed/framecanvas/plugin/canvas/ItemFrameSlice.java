@@ -74,7 +74,7 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     public @NotNull Location location() {
         Vector vector = canvas.topLeftCorner().toVector();
 
-        canvas.axis().addValue(vector, x);
+        canvas.axis().addValue(vector, canvas.direction(), x);
 
         vector.setY(vector.getY() - y);
 
