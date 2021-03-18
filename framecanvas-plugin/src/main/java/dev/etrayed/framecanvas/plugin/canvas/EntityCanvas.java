@@ -203,7 +203,11 @@ public class EntityCanvas implements Canvas {
         byte[] dst = new byte[ItemFrameSlice.BUFFER_SIZE];
 
         for (CanvasSlice direct : slices) {
-            System.arraycopy(colors, direct.y() * width + direct.x() * 128, dst, 0, ItemFrameSlice.BUFFER_SIZE);
+            for (int x = 0; x < 128; x++) {
+                for (int y = 0; y < 128; y++) {
+                    dst[y * 128 + x] = colors[(direct.y() * 128 + y) * width * 128 + direct.x() * 128 + x];
+                }
+            }
 
             direct.setAll(player, dst);
         }
