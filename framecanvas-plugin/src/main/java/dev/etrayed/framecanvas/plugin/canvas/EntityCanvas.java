@@ -290,7 +290,9 @@ public class EntityCanvas implements Canvas {
     }
 
     public void fireClickEvent(Location location, Player player, Vector position, boolean leftClick) {
-        slice(axis.chooseBlockValue(location.toVector()) - axis.chooseBlockValue(lowerCorner),
+        Location topLeftCorner = topLeftCorner();
+
+        slice(Math.abs(axis.chooseBlockValue(topLeftCorner.toVector()) - axis.chooseBlockValue(location.toVector())),
                 higherCorner.getBlockY() - location.getBlockY()).fireClickEvent(player, position, leftClick);
     }
 }
