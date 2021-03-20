@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Unmodifiable;
 /**
  * @author Etrayed
  */
-@Plugin(name = "FrameCanvas", version = "1.0.0")
+@Plugin(name = "FrameCanvas", version = "1.1.0")
 @Author("Etrayed")
 @DependsOn(@Dependency("ProtocolLib"))
 public class FrameCanvasPlugin extends JavaPlugin implements FrameCanvasAPI {
