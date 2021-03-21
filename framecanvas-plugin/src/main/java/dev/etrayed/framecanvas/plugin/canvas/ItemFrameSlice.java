@@ -220,6 +220,16 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     }
 
     @Override
+    public byte[] buffer() {
+        return buffer.buffer;
+    }
+
+    @Override
+    public byte[] buffer(@Nullable Player player) {
+        return obtainBuffer(player);
+    }
+
+    @Override
     public void clear(@NotNull Player player) {
         Preconditions.checkNotNull(player, "player");
 

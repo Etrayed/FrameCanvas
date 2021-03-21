@@ -35,6 +35,12 @@ public interface Drawable {
 
     byte obtainPixel(@Nullable Player player, @Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y);
 
+    /* modifiable */
+    byte[] buffer();
+
+    /* modifiable */
+    byte[] buffer(@Nullable Player player);
+
     boolean isGlobal();
 
     void clear(@NotNull Player player);

@@ -11,6 +11,7 @@ import dev.etrayed.framecanvas.api.canvas.Canvas;
 import dev.etrayed.framecanvas.api.util.MapIdObfuscator;
 import dev.etrayed.framecanvas.plugin.canvas.EntityCanvas;
 import dev.etrayed.framecanvas.plugin.listener.EntityUseListener;
+import dev.etrayed.framecanvas.plugin.listener.PlayerQuitListener;
 import dev.etrayed.framecanvas.plugin.util.MapIdObfuscationListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -44,6 +45,7 @@ public class FrameCanvasPlugin extends JavaPlugin implements FrameCanvasAPI {
     @Override
     public void onEnable() {
         Bukkit.getServicesManager().register(FrameCanvasAPI.class, this, this, ServicePriority.Highest);
+        Bukkit.getPluginManager().registerEvents(new PlayerQuitListener(this), this);
 
         ProtocolLibrary.getProtocolManager().addPacketListener(new EntityUseListener(this));
     }

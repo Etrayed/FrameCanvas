@@ -202,14 +202,14 @@ public class EntityCanvas implements Canvas {
 
         byte[] dst = new byte[ItemFrameSlice.BUFFER_SIZE];
 
-        for (CanvasSlice direct : slices) {
+        for (CanvasSlice slice : slices) {
             for (int x = 0; x < 128; x++) {
                 for (int y = 0; y < 128; y++) {
-                    dst[y * 128 + x] = colors[(direct.y() * 128 + y) * width * 128 + direct.x() * 128 + x];
+                    dst[y * 128 + x] = colors[(slice.y() * 128 + y) * width * 128 + slice.x() * 128 + x];
                 }
             }
 
-            direct.setAll(player, dst);
+            slice.setAll(player, dst);
         }
     }
 
@@ -221,6 +221,28 @@ public class EntityCanvas implements Canvas {
     @Override
     public byte obtainPixel(@Nullable Player player, @Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y) {
         return sliceAt(x, y).obtainPixel(player, x % 128, y % 128);
+    }
+
+    @Override
+    public byte[] buffer() {
+        return buffer(null);
+    }
+
+    @Override
+    public byte[] buffer(@Nullable Player player) {
+        byte[] bytes = new byte[width * height * ItemFrameSlice.BUFFER_SIZE];
+
+        for (ItemFrameSlice slice : slices) {
+            byte[] buffer = slice.buffer(player);
+
+            for (int x = 0; x < 128; x++) {
+                for (int y = 0; y < 128; y++) {
+                    bytes[(slice.y() * 128 + y) * width * 128 + slice.x() * 128 + x] = buffer[y * 128 + x];;
+                }
+            }
+        }
+
+        return bytes;
     }
 
     @Override
