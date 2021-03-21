@@ -233,6 +233,10 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     public void clear(@NotNull Player player) {
         Preconditions.checkNotNull(player, "player");
 
+        if(global || contextualBuffer == null) {
+            return;
+        }
+
         contextualBuffer.remove(player);
     }
 
