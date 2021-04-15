@@ -179,7 +179,7 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     }
 
     private byte[] obtainBuffer(@Nullable Player player) {
-        return global || player == null ? buffer.buffer : contextualBuffer.computeIfAbsent(player, unused -> new DirtyBuffer()).buffer;
+        return global || player == null ? buffer.buffer() : contextualBuffer.computeIfAbsent(player, unused -> new DirtyBuffer()).buffer();
     }
 
     private void setDirty(int x, int y, @Nullable Player player) {
@@ -190,22 +190,43 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         }
 
         if(x == -1 && y == -1) {
-            buffer.lowDirtyX = -1;
-            buffer.lowDirtyY = -1;
-            buffer.highDirtyX = -1;
-            buffer.highDirtyY = - 1;
-        } else {
-            if(buffer.lowDirtyX == -1) {
-                buffer.lowDirtyX = x;
-                buffer.lowDirtyY = y;
-                buffer.highDirtyX = x;
-                buffer.highDirtyY = y;
-            } else {
-                buffer.lowDirtyX = Math.min(x, buffer.lowDirtyX);
-                buffer.lowDirtyY = Math.min(y, buffer.lowDirtyY);
-                buffer.highDirtyX = Math.max(x, buffer.highDirtyX);
-                buffer.highDirtyY = Math.max(y, buffer.highDirtyY);
+            if(buffer.canvas != null) {
+                try {
+                    flagDirtyMethod.invoke(worldMapField.get(buffer.canvas.getMapView()), 127, 127);
+                    flagDirtyMethod.invoke(worldMapField.get(buffer.canvas.getMapView()), 0, 0);
+
+                    return;
+                } catch (Throwable throwable) {
+                    throw new RuntimeException(throwable); // Cannot occur in default spigot implementation.
+                }
             }
+
+            buffer.lowDirtyX = buffer.lowDirtyY = 0;
+            buffer.highDirtyX = buffer.highDirtyY = 127;
+
+            return;
+        }
+
+        if(buffer.canvas != null) {
+            try {
+                flagDirtyMethod.invoke(worldMapField.get(buffer.canvas.getMapView()), x, y);
+
+                return;
+            } catch (Throwable throwable) {
+                throw new RuntimeException(throwable); // Cannot occur in default spigot implementation.
+            }
+        }
+
+        if(buffer.lowDirtyX == -1) {
+            buffer.lowDirtyX = x;
+            buffer.lowDirtyY = y;
+            buffer.highDirtyX = x;
+            buffer.highDirtyY = y;
+        } else {
+            buffer.lowDirtyX = Math.min(x, buffer.lowDirtyX);
+            buffer.lowDirtyY = Math.min(y, buffer.lowDirtyY);
+            buffer.highDirtyX = Math.max(x, buffer.highDirtyX);
+            buffer.highDirtyY = Math.max(y, buffer.highDirtyY);
         }
     }
 
@@ -221,7 +242,7 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
     @Override
     public byte[] buffer() {
-        return buffer.buffer;
+        return buffer.buffer();
     }
 
     @Override
@@ -293,69 +314,98 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         map.getRenderers().stream().filter(renderer -> renderer != this).forEach(map::removeRenderer);
     }
 
+    private static Field bufferField, worldMapField;
+
+    private static Method flagDirtyMethod;
+
     @Override
     public void render(MapView map, MapCanvas canvas, Player player) {
+        if(bufferField == null) {
+            try {
+                bufferField = canvas.getClass().getDeclaredField("buffer");
+                worldMapField = canvas.getMapView().getClass().getDeclaredField("worldMap");
+                flagDirtyMethod = worldMapField.getType().getDeclaredMethod("flagDirty", Integer.TYPE, Integer.TYPE);
+
+                bufferField.setAccessible(true);
+                worldMapField.setAccessible(true);
+                flagDirtyMethod.setAccessible(true);
+            } catch (ReflectiveOperationException e) {
+                e.printStackTrace();
+            }
+        }
+
         if(isEmpty()) {
             return;
         }
 
         try {
-            omitBuffer(isContextual() ? player : null, canvas);
+            verifyBuffer(isContextual() ? player : null, canvas);
         } catch (Throwable e) {
             e.printStackTrace();
         }
     }
 
-    private static Field bufferField, worldMapField;
+    private void verifyBuffer(Player player, MapCanvas canvas) throws ReflectiveOperationException {
+        DirtyBuffer buffer = global || player == null ? this.buffer : contextualBuffer.get(player);
 
-    private static Method flagDirtyMethod;
-
-    private void omitBuffer(Player player, MapCanvas canvas) throws ReflectiveOperationException {
-        if(bufferField == null) {
-            initReflectiveCanvasFields(canvas);
+        if(buffer.canvas == canvas) {
+            return;
         }
 
-        DirtyBuffer buffer = global || player == null ? this.buffer : contextualBuffer.get(player);
+        if(buffer.buffer == null && buffer.canvas == null) {
+            buffer.canvas = canvas;
+
+            return;
+        }
+
+        Object oldBuffer;
+
+        if(buffer.canvas == null) {
+            oldBuffer = buffer.buffer;
+
+            buffer.buffer = null;
+        } else {
+            oldBuffer = bufferField.get(buffer.canvas);
+        }
+
+        bufferField.set(canvas, oldBuffer);
+
+        buffer.canvas = canvas;
 
         int lowDirtyX = buffer.lowDirtyX, lowDirtyY = buffer.lowDirtyY, highDirtyX = buffer.highDirtyX, highDirtyY = buffer.highDirtyY;
 
-        if(lowDirtyX == -1) { // seems like we're forced to update everything
+        if(lowDirtyX == -1) {
             lowDirtyX = 0;
             lowDirtyY = 0;
             highDirtyX = 127;
             highDirtyY = 127;
         }
 
-        setDirty(-1, -1, player);
+        flagDirtyMethod.invoke(worldMapField.get(canvas.getMapView()), lowDirtyX, lowDirtyY);
+        flagDirtyMethod.invoke(worldMapField.get(canvas.getMapView()), highDirtyX, highDirtyY);
 
-        //noinspection SuspiciousSystemArraycopy
-        System.arraycopy(buffer.buffer, 0, bufferField.get(canvas), 0, BUFFER_SIZE);
-
-        Object worldMapInstance = worldMapField.get(canvas.getMapView());
-
-        flagDirtyMethod.invoke(worldMapInstance, lowDirtyX, lowDirtyY);
-        flagDirtyMethod.invoke(worldMapInstance, highDirtyX, highDirtyY);
-    }
-
-    private void initReflectiveCanvasFields(MapCanvas canvas) throws ReflectiveOperationException {
-        bufferField = canvas.getClass().getDeclaredField("buffer");
-        worldMapField = canvas.getMapView().getClass().getDeclaredField("worldMap");
-        flagDirtyMethod = worldMapField.getType().getDeclaredMethod("flagDirty", Integer.TYPE, Integer.TYPE);
-
-        bufferField.setAccessible(true);
-        worldMapField.setAccessible(true);
-        flagDirtyMethod.setAccessible(true);
+        buffer.lowDirtyX = buffer.lowDirtyY = buffer.highDirtyX = buffer.highDirtyY = -1;
     }
 
     private static final class DirtyBuffer {
 
-        private final byte[] buffer;
+        private byte[] buffer;
+
+        private MapCanvas canvas;
 
         private int lowDirtyX = -1, lowDirtyY = -1, highDirtyX = -1, highDirtyY = -1;
 
         @SuppressWarnings("CheckForOutOfMemoryOnLargeArrayAllocation")
-        private DirtyBuffer() {
-            this.buffer = new byte[BUFFER_SIZE];
+        private byte[] buffer() {
+            if(canvas != null) {
+                try {
+                    return (byte[]) bufferField.get(canvas);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e); // this is impossible
+                }
+            }
+
+            return buffer == null ? buffer = new byte[BUFFER_SIZE] : buffer;
         }
     }
 }
