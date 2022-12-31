@@ -111,8 +111,8 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
     @Override
     public void setPixel(@Nullable Player player, @Range(from = 0, to = 127) int x, @Range(from = 0, to = 127) int y, byte color) {
-        Preconditions.checkArgument(x >= 0 && x < 127, "x must be between 0 and 127");
-        Preconditions.checkArgument(y >= 0 && y < 127, "y must be between 0 and 127");
+        Preconditions.checkArgument(x >= 0 && x <= 127, "x must be between 0 and 127");
+        Preconditions.checkArgument(y >= 0 && y <= 127, "y must be between 0 and 127");
 
         ensureBuffer();
 
