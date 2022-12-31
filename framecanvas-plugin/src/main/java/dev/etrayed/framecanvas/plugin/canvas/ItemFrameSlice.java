@@ -1,5 +1,7 @@
 package dev.etrayed.framecanvas.plugin.canvas;
 
+import com.comphenix.protocol.reflect.accessors.Accessors;
+import com.comphenix.protocol.reflect.accessors.FieldAccessor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import dev.etrayed.framecanvas.api.canvas.Canvas;
@@ -17,11 +19,8 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.Unmodifiable;
 
-import java.awt.*;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.awt.Image;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -106,12 +105,15 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     }
 
     @Override
-    public void setPixel(@Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y, byte color) {
+    public void setPixel(@Range(from = 0, to = 127) int x, @Range(from = 0, to = 127) int y, byte color) {
         setPixel(null, x, y, color);
     }
 
     @Override
-    public void setPixel(@Nullable Player player, @Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y, byte color) {
+    public void setPixel(@Nullable Player player, @Range(from = 0, to = 127) int x, @Range(from = 0, to = 127) int y, byte color) {
+        Preconditions.checkArgument(x >= 0 && x < 127, "x must be between 0 and 127");
+        Preconditions.checkArgument(y >= 0 && y < 127, "y must be between 0 and 127");
+
         ensureBuffer();
 
         obtainBuffer(player)[y * 128 + x] = color;
@@ -192,8 +194,8 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         if(x == -1 && y == -1) {
             if(buffer.canvas != null) {
                 try {
-                    flagDirtyMethod.invoke(worldMapField.get(buffer.canvas.getMapView()), 127, 127);
-                    flagDirtyMethod.invoke(worldMapField.get(buffer.canvas.getMapView()), 0, 0);
+                    MapDirtyMarker.markDirty(buffer.canvas.getMapView(), 127, 127, player);
+                    MapDirtyMarker.markDirty(buffer.canvas.getMapView(), 0, 0, player);
 
                     return;
                 } catch (Throwable throwable) {
@@ -209,7 +211,7 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
         if(buffer.canvas != null) {
             try {
-                flagDirtyMethod.invoke(worldMapField.get(buffer.canvas.getMapView()), x, y);
+                MapDirtyMarker.markDirty(buffer.canvas.getMapView(), x, y, player);
 
                 return;
             } catch (Throwable throwable) {
@@ -314,24 +316,12 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         map.getRenderers().stream().filter(renderer -> renderer != this).forEach(map::removeRenderer);
     }
 
-    private static Field bufferField, worldMapField;
-
-    private static Method flagDirtyMethod;
+    private static FieldAccessor bufferField;
 
     @Override
     public void render(MapView map, MapCanvas canvas, Player player) {
         if(bufferField == null) {
-            try {
-                bufferField = canvas.getClass().getDeclaredField("buffer");
-                worldMapField = canvas.getMapView().getClass().getDeclaredField("worldMap");
-                flagDirtyMethod = worldMapField.getType().getDeclaredMethod("flagDirty", Integer.TYPE, Integer.TYPE);
-
-                bufferField.setAccessible(true);
-                worldMapField.setAccessible(true);
-                flagDirtyMethod.setAccessible(true);
-            } catch (ReflectiveOperationException e) {
-                e.printStackTrace();
-            }
+            bufferField = Accessors.getFieldAccessor(canvas.getClass(), byte[].class, true);
         }
 
         if(isEmpty()) {
@@ -345,7 +335,7 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         }
     }
 
-    private void verifyBuffer(Player player, MapCanvas canvas) throws ReflectiveOperationException {
+    private void verifyBuffer(Player player, MapCanvas canvas) {
         DirtyBuffer buffer = global || player == null ? this.buffer : contextualBuffer.get(player);
 
         if(buffer.canvas == canvas) {
@@ -381,8 +371,8 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
             highDirtyY = 127;
         }
 
-        flagDirtyMethod.invoke(worldMapField.get(canvas.getMapView()), lowDirtyX, lowDirtyY);
-        flagDirtyMethod.invoke(worldMapField.get(canvas.getMapView()), highDirtyX, highDirtyY);
+        MapDirtyMarker.markDirty(canvas.getMapView(), lowDirtyX, lowDirtyY, player);
+        MapDirtyMarker.markDirty(canvas.getMapView(), highDirtyX, highDirtyY, player);
 
         buffer.lowDirtyX = buffer.lowDirtyY = buffer.highDirtyX = buffer.highDirtyY = -1;
     }
@@ -398,11 +388,7 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         @SuppressWarnings("CheckForOutOfMemoryOnLargeArrayAllocation")
         private byte[] buffer() {
             if(canvas != null) {
-                try {
-                    return (byte[]) bufferField.get(canvas);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e); // this is impossible
-                }
+                return (byte[]) bufferField.get(canvas);
             }
 
             return buffer == null ? buffer = new byte[BUFFER_SIZE] : buffer;

@@ -1,15 +1,15 @@
 package dev.etrayed.framecanvas.plugin.listener;
 
 import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.events.*;
 import com.comphenix.protocol.wrappers.EnumWrappers;
+import com.comphenix.protocol.wrappers.WrappedEnumEntityUseAction;
 import dev.etrayed.framecanvas.plugin.FrameCanvasPlugin;
 import dev.etrayed.framecanvas.plugin.canvas.EntityCanvas;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
+
+import java.util.List;
 
 /**
  * @author Etrayed
@@ -19,7 +19,7 @@ public class EntityUseListener extends PacketAdapter {
     private final FrameCanvasPlugin plugin;
 
     public EntityUseListener(FrameCanvasPlugin plugin) {
-        super(plugin, ListenerPriority.MONITOR, PacketType.Play.Client.USE_ENTITY);
+        super(plugin, ListenerPriority.MONITOR, List.of(PacketType.Play.Client.USE_ENTITY), ListenerOptions.SYNC);
 
         this.plugin = plugin;
     }
@@ -46,9 +46,9 @@ public class EntityUseListener extends PacketAdapter {
             return;
         }
 
-        EnumWrappers.EntityUseAction useAction = container.getEntityUseActions().read(0);
+        WrappedEnumEntityUseAction useAction = container.getEnumEntityUseActions().read(0);
 
-        canvas.fireClickEvent(entity.getLocation(), event.getPlayer(), useAction == EnumWrappers.EntityUseAction.INTERACT_AT
-                ? container.getVectors().read(0) : null, useAction == EnumWrappers.EntityUseAction.ATTACK);
+        canvas.fireClickEvent(entity.getLocation(), event.getPlayer(), useAction.getAction() == EnumWrappers.EntityUseAction.INTERACT_AT
+                ? useAction.getPosition() : null, useAction.getAction() == EnumWrappers.EntityUseAction.ATTACK);
     }
 }
