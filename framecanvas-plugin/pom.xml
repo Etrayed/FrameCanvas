@@ -24,7 +24,6 @@
                 <configuration>
                     <createDependencyReducedPom>false</createDependencyReducedPom>
                     <shadedArtifactAttached>true</shadedArtifactAttached>
-                    <outputDirectory>${outputLocation}</outputDirectory>
                 </configuration>
                 <executions>
                     <execution>
