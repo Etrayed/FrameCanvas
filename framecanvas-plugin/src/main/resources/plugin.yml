@@ -2,4 +2,5 @@ name: FrameCanvas
 version: 1.2.0
 author: Etrayed
 main: dev.etrayed.framecanvas.plugin.FrameCanvasPlugin
+api-version: 1.19
 depend: [ProtocolLib]
