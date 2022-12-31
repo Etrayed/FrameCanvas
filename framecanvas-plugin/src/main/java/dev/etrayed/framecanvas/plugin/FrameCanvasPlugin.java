@@ -8,39 +8,25 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 import dev.etrayed.framecanvas.api.FrameCanvasAPI;
 import dev.etrayed.framecanvas.api.canvas.Canvas;
-import dev.etrayed.framecanvas.api.util.MapIdObfuscator;
 import dev.etrayed.framecanvas.plugin.canvas.EntityCanvas;
 import dev.etrayed.framecanvas.plugin.listener.EntityUseListener;
 import dev.etrayed.framecanvas.plugin.listener.PlayerQuitListener;
-import dev.etrayed.framecanvas.plugin.util.MapIdObfuscationListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.plugin.java.annotation.dependency.Dependency;
-import org.bukkit.plugin.java.annotation.dependency.DependsOn;
-import org.bukkit.plugin.java.annotation.plugin.Plugin;
-import org.bukkit.plugin.java.annotation.plugin.author.Author;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 /**
  * @author Etrayed
  */
-@Plugin(name = "FrameCanvas", version = "1.1.0")
-@Author("Etrayed")
-@DependsOn(@Dependency("ProtocolLib"))
 public class FrameCanvasPlugin extends JavaPlugin implements FrameCanvasAPI {
 
     private final ListMultimap<World, Canvas> registeredCanvas = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
-
-    private final MapIdObfuscationListener obfuscationListener = new MapIdObfuscationListener(this);
-
-    private MapIdObfuscator obfuscator;
 
     @Override
     public void onEnable() {
@@ -84,22 +70,6 @@ public class FrameCanvasPlugin extends JavaPlugin implements FrameCanvasAPI {
         Preconditions.checkNotNull(canvas, "canvas");
 
         registeredCanvas.remove(canvas.world(), canvas);
-    }
-
-    @Override
-    public void setObfuscator(@Nullable MapIdObfuscator obfuscator) {
-        this.obfuscator = obfuscator;
-
-        if(obfuscator != null && !ProtocolLibrary.getProtocolManager().getPacketListeners().contains(obfuscationListener)) {
-            ProtocolLibrary.getProtocolManager().addPacketListener(obfuscationListener);
-        } else if(obfuscator == null && ProtocolLibrary.getProtocolManager().getPacketListeners().contains(obfuscationListener)) {
-            ProtocolLibrary.getProtocolManager().removePacketListener(obfuscationListener);
-        }
-    }
-
-    @Override
-    public @Nullable MapIdObfuscator obfuscator() {
-        return obfuscator;
     }
 
     public EntityCanvas locateCanvas(Location location) {

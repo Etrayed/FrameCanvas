@@ -4,14 +4,12 @@ import com.google.common.base.Preconditions;
 import dev.etrayed.framecanvas.api.canvas.Canvas;
 import dev.etrayed.framecanvas.api.canvas.CanvasSlice;
 import dev.etrayed.framecanvas.api.canvas.HorizontalAxis;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapPalette;
 import org.bukkit.map.MapView;
 import org.bukkit.util.Vector;
@@ -259,7 +257,6 @@ public class EntityCanvas implements Canvas {
         }
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void verifyFrames() {
         Map<Integer, ItemFrame> availableFrames = new HashMap<>();
@@ -285,16 +282,24 @@ public class EntityCanvas implements Canvas {
 
             MapView view = Bukkit.createMap(world);
 
-            frame.setItem(new ItemStack(Material.MAP, 1, view.getId()));
+            ItemStack mapStack = new ItemStack(Material.FILLED_MAP);
+            MapMeta meta = (MapMeta) mapStack.getItemMeta();
+
+            meta.setMapView(view);
+
+            mapStack.setItemMeta(meta);
+
+            frame.setItem(mapStack);
+            frame.setRotation(Rotation.NONE);
+            frame.setFixed(true);
 
             view.addRenderer(slice);
         }
     }
 
-    @SuppressWarnings("deprecation")
     private boolean isValidFrameItem(ItemFrameSlice slice, ItemStack itemStack) {
-        return itemStack != null && itemStack.getType() == Material.MAP && Bukkit.getMap(itemStack.getDurability()) != null
-                && Bukkit.getMap(itemStack.getDurability()).getRenderers().stream().anyMatch(mapRenderer -> mapRenderer == slice);
+        return itemStack != null && itemStack.getType() == Material.FILLED_MAP && itemStack.getItemMeta() instanceof MapMeta meta
+                && meta.getMapView() != null && meta.getMapView().getRenderers().stream().anyMatch(mapRenderer -> mapRenderer == slice);
     }
 
     public AtomicBoolean hasListeners() {
