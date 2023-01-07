@@ -338,7 +338,7 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     private void verifyBuffer(Player player, MapCanvas canvas) {
         DirtyBuffer buffer = global || player == null ? this.buffer : contextualBuffer.get(player);
 
-        if(buffer.canvas == canvas) {
+        if(buffer == null || buffer.canvas == canvas) {
             return;
         }
 
