@@ -18,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
 import java.awt.*;
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -152,6 +153,11 @@ public class EntityCanvas implements Canvas {
         });
     }
 
+    @Override
+    public void setPixel(@Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y, Color color) {
+        setPixel(null, x, y, color);
+    }
+
     private Image resizeImage(Image image) {
         if(image.getWidth(null) % 128 == 0 && image.getHeight(null) % 128 == 0) {
             return image;
@@ -172,13 +178,30 @@ public class EntityCanvas implements Canvas {
     }
 
     @Override
+    public void setPixel(@Nullable Player player, @Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y, Color color) {
+        sliceAt(x, y).setPixel(player, x % 128, y % 128, color);
+    }
+
+    @Override
     public void setPixel(@Nullable Player player, @Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y, byte color) {
         sliceAt(x, y).setPixel(player, x % 128, y % 128, color);
     }
 
     @Override
+    public void fill(Color color) {
+        fill(null, color);
+    }
+
+    @Override
     public void fill(byte color) {
         fill(null, color);
+    }
+
+    @Override
+    public void fill(@Nullable Player player, Color color) {
+        for (CanvasSlice direct : slices) {
+            direct.fill(player, color);
+        }
     }
 
     @Override
@@ -189,8 +212,24 @@ public class EntityCanvas implements Canvas {
     }
 
     @Override
+    public void setAll(@NotNull Color[] colors) {
+        setAll(null, colors);
+    }
+
+    @Override
     public void setAll(@NotNull byte[] colors) {
         setAll(null, colors);
+    }
+
+    @Override
+    public void setAll(@Nullable Player player, @NotNull Color[] colors) {
+        byte[] bytes = new byte[colors.length];
+
+        for (int i = 0; i < colors.length; i++) {
+            bytes[i] = MapPalette.matchColor(colors[i]);
+        }
+
+        setAll(player, bytes);
     }
 
     @Override
@@ -212,13 +251,40 @@ public class EntityCanvas implements Canvas {
     }
 
     @Override
+    public Color obtainPixelColor(@Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y) {
+        return obtainPixelColor(null, x, y);
+    }
+
+    @Override
     public byte obtainPixel(@Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y) {
         return obtainPixel(null, x, y);
     }
 
     @Override
+    public Color obtainPixelColor(@Nullable Player player, @Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y) {
+        return sliceAt(x, y).obtainPixelColor(player, x % 128, y % 128);
+    }
+
+    @Override
     public byte obtainPixel(@Nullable Player player, @Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y) {
         return sliceAt(x, y).obtainPixel(player, x % 128, y % 128);
+    }
+
+    @Override
+    public Color[] colorBuffer() {
+        return colorBuffer(null);
+    }
+
+    @Override
+    public Color[] colorBuffer(@Nullable Player player) {
+        byte[] buffer = buffer(player);
+        Color[] colors = new Color[buffer.length];
+
+        for (int i = 0; i < buffer.length; i++) {
+            colors[i] = MapPalette.getColor(buffer[i]);
+        }
+
+        return colors;
     }
 
     @Override

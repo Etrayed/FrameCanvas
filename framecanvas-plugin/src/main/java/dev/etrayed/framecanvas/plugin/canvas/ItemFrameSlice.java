@@ -19,6 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.Unmodifiable;
 
+import java.awt.Color;
 import java.awt.Image;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -105,8 +106,18 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     }
 
     @Override
+    public void setPixel(@Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y, Color color) {
+        setPixel(null, x, y, color);
+    }
+
+    @Override
     public void setPixel(@Range(from = 0, to = 127) int x, @Range(from = 0, to = 127) int y, byte color) {
         setPixel(null, x, y, color);
+    }
+
+    @Override
+    public void setPixel(@Nullable Player player, @Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y, Color color) {
+        setPixel(player, x, y, MapPalette.matchColor(color));
     }
 
     @Override
@@ -122,8 +133,18 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     }
 
     @Override
+    public void fill(Color color) {
+        fill(null, color);
+    }
+
+    @Override
     public void fill(byte color) {
         fill(null, color);
+    }
+
+    @Override
+    public void fill(@Nullable Player player, Color color) {
+        fill(player, MapPalette.matchColor(color));
     }
 
     @Override
@@ -137,8 +158,24 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     }
 
     @Override
+    public void setAll(@NotNull Color[] colors) {
+        setAll(null, colors);
+    }
+
+    @Override
     public void setAll(@NotNull byte[] colors) {
         setAll(null, colors);
+    }
+
+    @Override
+    public void setAll(@Nullable Player player, @NotNull Color[] colors) {
+        byte[] array = new byte[colors.length];
+
+        for (int i = 0; i < colors.length; i++) {
+            array[i] = MapPalette.matchColor(colors[i]);
+        }
+
+        setAll(player, array);
     }
 
     @Override
@@ -152,6 +189,11 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
         setDirty(0, 0, player);
         setDirty(127, 127, player);
+    }
+
+    @Override
+    public Color obtainPixelColor(@Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y) {
+        return obtainPixelColor(null, x, y);
     }
 
     private void ensureBuffer() {
@@ -172,12 +214,34 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     }
 
     @Override
+    public Color obtainPixelColor(@Nullable Player player, @Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y) {
+        return MapPalette.getColor(obtainPixel(player, x, y));
+    }
+
+    @Override
     public byte obtainPixel(@Nullable Player player, @Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y) {
         if(isEmpty() || !(global || player == null || contextualBuffer.containsKey(player))) {
             return 0;
         }
 
         return obtainBuffer(player)[y * 128 + x];
+    }
+
+    @Override
+    public Color[] colorBuffer() {
+        return colorBuffer(null);
+    }
+
+    @Override
+    public Color[] colorBuffer(@Nullable Player player) {
+        byte[] bytes = buffer(player);
+        Color[] colors = new Color[bytes.length];
+
+        for (int i = 0; i < bytes.length; i++) {
+            colors[i] = MapPalette.getColor(bytes[i]);
+        }
+
+        return colors;
     }
 
     private byte[] obtainBuffer(@Nullable Player player) {
