@@ -147,14 +147,12 @@ public class EntityCanvas implements Canvas {
         Preconditions.checkNotNull(image, "image");
 
         return CompletableFuture.runAsync(() -> {
-            BufferedImage finalImage = resizeImage(image);
+            int boundX = Math.min(width * 128, startX + image.getWidth(null));
+            int boundY = Math.min(height * 128, startY + image.getHeight(null));
 
-            int boundX = Math.min(width * 128, startX + finalImage.getWidth(null));
-            int boundY = Math.min(height * 128, startY + finalImage.getHeight(null));
-
-            for (int x = startX; x < boundX; x++) {
-                for (int y = startY; y < boundY; y++) {
-                    setPixel(player, x, y, new Color(finalImage.getRGB(x, y), true));
+            for (int x = startX, imgX = 0; x < boundX; x++, imgX++) {
+                for (int y = startY, imgY = 0; y < boundY; y++, imgY++) {
+                    setPixel(player, x, y, new Color(image.getRGB(imgX, imgY), true));
                 }
             }
         });
@@ -163,20 +161,6 @@ public class EntityCanvas implements Canvas {
     @Override
     public void setPixel(@Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y, Color color) {
         setPixel(null, x, y, color);
-    }
-
-    private BufferedImage resizeImage(BufferedImage image) {
-        if(image.getWidth(null) % 128 == 0 && image.getHeight(null) % 128 == 0) {
-            return image;
-        }
-
-        BufferedImage resizedImage = new BufferedImage(width << 7 /* -> * 128 */, height << 7, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D graphics = resizedImage.createGraphics();
-
-        graphics.drawImage(image, 0, 0, resizedImage.getWidth(), resizedImage.getHeight(), null);
-        graphics.dispose();
-
-        return resizedImage;
     }
 
     @Override
