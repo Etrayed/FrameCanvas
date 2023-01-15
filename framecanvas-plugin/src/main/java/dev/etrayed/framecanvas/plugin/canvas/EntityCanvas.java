@@ -154,7 +154,7 @@ public class EntityCanvas implements Canvas {
 
             for (int x = startX; x < boundX; x++) {
                 for (int y = startY; y < boundY; y++) {
-                    setPixel(x, y, new Color(finalImage.getRGB(x, y), true));
+                    setPixel(player, x, y, new Color(finalImage.getRGB(x, y), true));
                 }
             }
         });
