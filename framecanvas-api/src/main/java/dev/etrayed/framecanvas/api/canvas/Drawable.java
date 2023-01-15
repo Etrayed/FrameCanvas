@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -14,10 +15,16 @@ import java.util.concurrent.CompletableFuture;
 public interface Drawable {
 
     @NotNull
-    CompletableFuture<Void> displayImage(@NotNull Image image);
+    CompletableFuture<Void> displayImage(@NotNull BufferedImage image);
 
     @NotNull
-    CompletableFuture<Void> displayImage(@Nullable Player player, @NotNull Image image);
+    CompletableFuture<Void> displayImage(@Range(from = 0, to = 126) int startX, @Range(from = 0, to = 126) int startY, @NotNull BufferedImage image);
+
+    @NotNull
+    CompletableFuture<Void> displayImage(@Nullable Player player, @NotNull BufferedImage image);
+
+    @NotNull
+    CompletableFuture<Void> displayImage(@Nullable Player player, @Range(from = 0, to = 126) int startX, @Range(from = 0, to = 126) int startY, @NotNull BufferedImage image);
 
     void setPixel(@Range(from = 0, to = Integer.MAX_VALUE) int x, @Range(from = 0, to = Integer.MAX_VALUE) int y, Color color);
 

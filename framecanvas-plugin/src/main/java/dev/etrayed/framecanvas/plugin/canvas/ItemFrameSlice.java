@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.awt.Color;
-import java.awt.Image;
+import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -81,20 +81,30 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> displayImage(@NotNull Image image) {
+    public @NotNull CompletableFuture<Void> displayImage(@NotNull BufferedImage image) {
         return displayImage(null, image);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> displayImage(@Range(from = 0, to = 126) int startX, @Range(from = 0, to = 126) int startY, @NotNull BufferedImage image) {
+        return displayImage(null, startX, startY, image);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> displayImage(@Nullable Player player, @NotNull BufferedImage image) {
+        return displayImage(player, 0, 0, image);
     }
 
     @SuppressWarnings("deprecation")
     @Override
-    public @NotNull CompletableFuture<Void> displayImage(@Nullable Player player, @NotNull Image image) {
+    public @NotNull CompletableFuture<Void> displayImage(@Nullable Player player, @Range(from = 0, to = 126) int startX, @Range(from = 0, to = 126) int startY, @NotNull BufferedImage image) {
         Preconditions.checkNotNull(image, "image");
 
         return CompletableFuture.runAsync(() -> {
             byte[] imageBytes = MapPalette.imageToBytes(MapPalette.resizeImage(image));
 
-            for (int x = 0; x < 128; x++) {
-                for (int y = 0; y < 128; y++) {
+            for (int x = startX; x < 128; x++) {
+                for (int y = startY; y < 128; y++) {
                     byte imgByte = imageBytes[y * 128 + x];
 
                     if(imgByte != MapPalette.TRANSPARENT) {

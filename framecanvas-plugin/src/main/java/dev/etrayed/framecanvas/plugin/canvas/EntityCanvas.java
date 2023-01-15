@@ -127,27 +127,34 @@ public class EntityCanvas implements Canvas {
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> displayImage(@NotNull Image image) {
+    public @NotNull CompletableFuture<Void> displayImage(@NotNull BufferedImage image) {
         return displayImage(null, image);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> displayImage(@Range(from = 0, to = 126) int startX, @Range(from = 0, to = 126) int startY, @NotNull BufferedImage image) {
+        return displayImage(null, startX, startY, image);
     }
 
     @SuppressWarnings("deprecation")
     @Override
-    public @NotNull CompletableFuture<Void> displayImage(@Nullable Player player, @NotNull Image image) {
+    public @NotNull CompletableFuture<Void> displayImage(@Nullable Player player, @NotNull BufferedImage image) {
+        return displayImage(player, 0, 0, image);
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> displayImage(@Nullable Player player, @Range(from = 0, to = 126) int startX, @Range(from = 0, to = 126) int startY, @NotNull BufferedImage image) {
         Preconditions.checkNotNull(image, "image");
 
         return CompletableFuture.runAsync(() -> {
-            byte[] imageBytes = MapPalette.imageToBytes(resizeImage(image));
+            BufferedImage finalImage = resizeImage(image);
 
-            for (CanvasSlice slice : slices) {
-                for (int x = 0; x < 128; x++) {
-                    for (int y = 0; y < 128; y++) {
-                        byte imgByte = imageBytes[(slice.y() * 128 + y) * 128 * this.width + slice.x() * 128 + x];
+            int boundX = Math.min(width * 128, startX + finalImage.getWidth(null));
+            int boundY = Math.min(height * 128, startY + finalImage.getHeight(null));
 
-                        if(imgByte != MapPalette.TRANSPARENT) {
-                            slice.setPixel(player, x, y, imgByte);
-                        }
-                    }
+            for (int x = startX; x < boundX; x++) {
+                for (int y = startY; y < boundY; y++) {
+                    setPixel(x, y, new Color(finalImage.getRGB(x, y), true));
                 }
             }
         });
@@ -158,7 +165,7 @@ public class EntityCanvas implements Canvas {
         setPixel(null, x, y, color);
     }
 
-    private Image resizeImage(Image image) {
+    private BufferedImage resizeImage(BufferedImage image) {
         if(image.getWidth(null) % 128 == 0 && image.getHeight(null) % 128 == 0) {
             return image;
         }
