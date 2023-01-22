@@ -172,7 +172,7 @@ public class EntityCanvas implements Canvas {
                 for (int y = startY, imgY = 0; y < boundY; y++, imgY++) {
                     Color color = new Color(image.getRGB(imgX, imgY), true);
 
-                    if(color.getAlpha() == 255) {
+                    if(color.getAlpha() >= 128) {
                         setPixel(player, x, y, color);
                     }
                 }
