@@ -17,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
-import java.awt.*;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.util.*;
@@ -130,7 +129,14 @@ public class EntityCanvas implements Canvas {
     public @Nullable CanvasSlice sliceAt(@NotNull Location location) {
         Preconditions.checkNotNull(location, "location");
 
-        return Arrays.stream(slices).filter(slice -> slice.location().equals(location)).findFirst().orElse(null);
+        return Arrays.stream(slices)
+                .filter(slice ->
+                        slice.location().getWorld().equals(location.getWorld())
+                        && slice.location().getBlockX() == location.getBlockX()
+                        && slice.location().getBlockY() == location.getBlockY()
+                        && slice.location().getBlockZ() == location.getBlockZ()
+                ).findFirst()
+                .orElse(null);
     }
 
     @Override
