@@ -117,8 +117,20 @@ public class EntityCanvas implements Canvas {
     }
 
     @Override
+    public boolean isCovering(@Nullable ItemFrame itemFrame) {
+        return itemFrame != null && isCovering(itemFrame.getLocation());
+    }
+
+    @Override
     public @NotNull ItemFrameSlice sliceAt(@Range(from = 0, to = Integer.MAX_VALUE) int globalX, @Range(from = 0, to = Integer.MAX_VALUE) int globalY) {
         return slice(globalX / 128, globalY / 128);
+    }
+
+    @Override
+    public @Nullable CanvasSlice sliceAt(@NotNull Location location) {
+        Preconditions.checkNotNull(location, "location");
+
+        return Arrays.stream(slices).filter(slice -> slice.location().equals(location)).findFirst().orElse(null);
     }
 
     @Override
