@@ -1,6 +1,7 @@
 package dev.etrayed.framecanvas.api;
 
 import com.google.common.collect.ImmutableList;
+import dev.etrayed.framecanvas.api.cache.ImageCache;
 import dev.etrayed.framecanvas.api.canvas.Canvas;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -24,6 +25,8 @@ public interface FrameCanvasAPI {
     ImmutableList<Canvas> registeredCanvas();
 
     void unregisterCanvas(@NotNull Canvas canvas);
+
+    ImageCache imageCache();
 
     @ApiStatus.Internal
     final class InstanceHolder {

@@ -7,6 +7,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 import dev.etrayed.framecanvas.api.FrameCanvasAPI;
 import dev.etrayed.framecanvas.api.canvas.Canvas;
+import dev.etrayed.framecanvas.plugin.cache.SerializingImageCache;
 import dev.etrayed.framecanvas.plugin.canvas.EntityCanvas;
 import dev.etrayed.framecanvas.plugin.listener.PlayerInteractEntityListener;
 import dev.etrayed.framecanvas.plugin.listener.PlayerQuitListener;
@@ -27,6 +28,8 @@ public class FrameCanvasPlugin extends JavaPlugin implements FrameCanvasAPI {
 
     private final ListMultimap<World, Canvas> registeredCanvas = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
 
+    private final SerializingImageCache imageCache = new SerializingImageCache();
+
     @Override
     public void onEnable() {
         Bukkit.getServicesManager().register(FrameCanvasAPI.class, this, this, ServicePriority.Highest);
@@ -44,7 +47,7 @@ public class FrameCanvasPlugin extends JavaPlugin implements FrameCanvasAPI {
         Preconditions.checkArgument(firstLocation.getWorld() != null && firstLocation.getWorld()
                 .equals(secondLocation.getWorld()), "worlds of locations must match");
 
-        EntityCanvas canvas = new EntityCanvas(firstLocation.getWorld(), new Vector(
+        EntityCanvas canvas = new EntityCanvas(this, firstLocation.getWorld(), new Vector(
                 Math.min(firstLocation.getBlockX(), secondLocation.getBlockX()),
                 Math.min(firstLocation.getBlockY(), secondLocation.getBlockY()),
                 Math.min(firstLocation.getBlockZ(), secondLocation.getBlockZ())
@@ -69,6 +72,11 @@ public class FrameCanvasPlugin extends JavaPlugin implements FrameCanvasAPI {
         Preconditions.checkNotNull(canvas, "canvas");
 
         registeredCanvas.remove(canvas.world(), canvas);
+    }
+
+    @Override
+    public SerializingImageCache imageCache() {
+        return imageCache;
     }
 
     public EntityCanvas locateCanvas(Location location) {

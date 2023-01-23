@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import dev.etrayed.framecanvas.api.canvas.Canvas;
 import dev.etrayed.framecanvas.api.canvas.CanvasSlice;
 import dev.etrayed.framecanvas.api.canvas.HorizontalAxis;
+import dev.etrayed.framecanvas.plugin.FrameCanvasPlugin;
 import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.ItemFrame;
@@ -28,6 +29,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class EntityCanvas implements Canvas {
 
+    final FrameCanvasPlugin plugin;
+
     private final World world;
 
     private final Vector lowerCorner;
@@ -46,10 +49,12 @@ public class EntityCanvas implements Canvas {
 
     private final AtomicBoolean hasListeners = new AtomicBoolean();
 
-    public EntityCanvas(World world, Vector lowerCorner, Vector higherCorner, BlockFace direction, boolean global) {
+    public EntityCanvas(FrameCanvasPlugin plugin, World world, Vector lowerCorner, Vector higherCorner,
+                        BlockFace direction, boolean global) {
         Preconditions.checkArgument(lowerCorner.getBlockX() == higherCorner.getBlockX()
                 || lowerCorner.getBlockZ() == higherCorner.getBlockZ(), "corners must match in one axis (x or z)");
 
+        this.plugin = plugin;
         this.world = world;
         this.lowerCorner = lowerCorner;
         this.higherCorner = higherCorner;
@@ -165,15 +170,27 @@ public class EntityCanvas implements Canvas {
         Preconditions.checkNotNull(image, "image");
 
         return CompletableFuture.runAsync(() -> {
+            Byte[] data;
+
+            if(plugin.imageCache().isAutoCachingEnabled() && !plugin.imageCache().isCached(image)) {
+                plugin.imageCache().cache(image);
+            }
+
+            if(plugin.imageCache().isCached(image)) {
+                data = plugin.imageCache().getCached(image);
+            } else {
+                data = plugin.imageCache().serialize(image);
+            }
+
             int boundX = Math.min(width * 128, startX + image.getWidth(null));
             int boundY = Math.min(height * 128, startY + image.getHeight(null));
 
             for (int x = startX, imgX = 0; x < boundX; x++, imgX++) {
                 for (int y = startY, imgY = 0; y < boundY; y++, imgY++) {
-                    Color color = new Color(image.getRGB(imgX, imgY), true);
+                    Byte pixel = data[imgY * image.getWidth() + imgX];
 
-                    if(color.getAlpha() >= 128) {
-                        setPixel(player, x, y, color);
+                    if(pixel != null) {
+                        setPixel(player, x, y, pixel);
                     }
                 }
             }
