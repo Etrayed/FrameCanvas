@@ -7,6 +7,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 import dev.etrayed.framecanvas.api.FrameCanvasAPI;
 import dev.etrayed.framecanvas.api.canvas.Canvas;
+import dev.etrayed.framecanvas.api.util.SerializedImage;
 import dev.etrayed.framecanvas.plugin.canvas.EntityCanvas;
 import dev.etrayed.framecanvas.plugin.listener.PlayerInteractEntityListener;
 import dev.etrayed.framecanvas.plugin.listener.PlayerQuitListener;
@@ -19,7 +20,6 @@ import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.awt.Color;
@@ -77,7 +77,9 @@ public class FrameCanvasPlugin extends JavaPlugin implements FrameCanvasAPI {
     }
 
     @Override
-    public Byte[] serializeImage(@Nullable BufferedImage image) {
+    public SerializedImage serializeImage(@NotNull BufferedImage image) {
+        Preconditions.checkNotNull(image, "image");
+
         Byte[] data = new Byte[image.getWidth() * image.getHeight()];
 
         for (int x = 0; x < image.getWidth(); x++) {
@@ -90,7 +92,7 @@ public class FrameCanvasPlugin extends JavaPlugin implements FrameCanvasAPI {
             }
         }
 
-        return data;
+        return new SerializedImage(image.getWidth(), image.getHeight(), data);
     }
 
     public EntityCanvas locateCanvas(Location location) {
