@@ -1,14 +1,13 @@
 package dev.etrayed.framecanvas.api;
 
 import com.google.common.collect.ImmutableList;
-import dev.etrayed.framecanvas.api.cache.ImageCache;
 import dev.etrayed.framecanvas.api.canvas.Canvas;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.*;
+
+import java.awt.image.BufferedImage;
 
 /**
  * @author Etrayed
@@ -26,7 +25,8 @@ public interface FrameCanvasAPI {
 
     void unregisterCanvas(@NotNull Canvas canvas);
 
-    ImageCache imageCache();
+    @Contract("null -> null; !null -> !null")
+    Byte[] serializeImage(@Nullable BufferedImage image);
 
     @ApiStatus.Internal
     final class InstanceHolder {

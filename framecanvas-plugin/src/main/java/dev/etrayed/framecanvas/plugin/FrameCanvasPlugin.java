@@ -7,7 +7,6 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 import dev.etrayed.framecanvas.api.FrameCanvasAPI;
 import dev.etrayed.framecanvas.api.canvas.Canvas;
-import dev.etrayed.framecanvas.plugin.cache.SerializingImageCache;
 import dev.etrayed.framecanvas.plugin.canvas.EntityCanvas;
 import dev.etrayed.framecanvas.plugin.listener.PlayerInteractEntityListener;
 import dev.etrayed.framecanvas.plugin.listener.PlayerQuitListener;
@@ -15,11 +14,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
+import org.bukkit.map.MapPalette;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
+
+import java.awt.Color;
+import java.awt.image.BufferedImage;
 
 /**
  * @author Etrayed
@@ -27,8 +31,6 @@ import org.jetbrains.annotations.Unmodifiable;
 public class FrameCanvasPlugin extends JavaPlugin implements FrameCanvasAPI {
 
     private final ListMultimap<World, Canvas> registeredCanvas = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
-
-    private final SerializingImageCache imageCache = new SerializingImageCache();
 
     @Override
     public void onEnable() {
@@ -75,8 +77,20 @@ public class FrameCanvasPlugin extends JavaPlugin implements FrameCanvasAPI {
     }
 
     @Override
-    public SerializingImageCache imageCache() {
-        return imageCache;
+    public Byte[] serializeImage(@Nullable BufferedImage image) {
+        Byte[] data = new Byte[image.getWidth() * image.getHeight()];
+
+        for (int x = 0; x < image.getWidth(); x++) {
+            for (int y = 0; y < image.getHeight(); y++) {
+                byte color = MapPalette.matchColor(new Color(image.getRGB(x, y), true));
+
+                if(color != MapPalette.TRANSPARENT) {
+                    data[y * image.getWidth() + x] = color;
+                }
+            }
+        }
+
+        return data;
     }
 
     public EntityCanvas locateCanvas(Location location) {

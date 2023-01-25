@@ -159,7 +159,6 @@ public class EntityCanvas implements Canvas {
         return displayImage(null, startX, startY, image);
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public @NotNull CompletableFuture<Void> displayImage(@Nullable Player player, @NotNull BufferedImage image) {
         return displayImage(player, 0, 0, image);
@@ -170,26 +169,14 @@ public class EntityCanvas implements Canvas {
         Preconditions.checkNotNull(image, "image");
 
         return CompletableFuture.runAsync(() -> {
-            Byte[] data;
-
-            if(plugin.imageCache().isAutoCachingEnabled() && !plugin.imageCache().isCached(image)) {
-                plugin.imageCache().cache(image);
-            }
-
-            if(plugin.imageCache().isCached(image)) {
-                data = plugin.imageCache().getCached(image);
-            } else {
-                data = plugin.imageCache().serialize(image);
-            }
-
             int boundX = Math.min(width * 128, startX + image.getWidth(null));
             int boundY = Math.min(height * 128, startY + image.getHeight(null));
 
             for (int x = startX, imgX = 0; x < boundX; x++, imgX++) {
                 for (int y = startY, imgY = 0; y < boundY; y++, imgY++) {
-                    Byte pixel = data[imgY * image.getWidth() + imgX];
+                    byte pixel = MapPalette.matchColor(new Color(image.getRGB(imgX, imgY), true));
 
-                    if(pixel != null) {
+                    if(pixel != MapPalette.TRANSPARENT) {
                         setPixel(player, x, y, pixel);
                     }
                 }

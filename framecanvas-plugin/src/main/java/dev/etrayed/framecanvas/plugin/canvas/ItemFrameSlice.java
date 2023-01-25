@@ -100,24 +100,12 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         Preconditions.checkNotNull(image, "image");
 
         return CompletableFuture.runAsync(() -> {
-            Byte[] data;
-
-            if(canvas.plugin.imageCache().isAutoCachingEnabled() && !canvas.plugin.imageCache().isCached(image)) {
-                canvas.plugin.imageCache().cache(image);
-            }
-
-            if(canvas.plugin.imageCache().isCached(image)) {
-                data = canvas.plugin.imageCache().getCached(image);
-            } else {
-                data = canvas.plugin.imageCache().serialize(image);
-            }
-
             for (int x = startX; x < 128; x++) {
                 for (int y = startY; y < 128; y++) {
-                    Byte imgByte = data[y * image.getWidth() + x];
+                    byte pixel = MapPalette.matchColor(new Color(image.getRGB(x, y), true));
 
-                    if(imgByte != null) {
-                        setPixel(player, x, y, imgByte);
+                    if(pixel != MapPalette.TRANSPARENT) {
+                        setPixel(player, x, y, pixel);
                     }
                 }
             }
