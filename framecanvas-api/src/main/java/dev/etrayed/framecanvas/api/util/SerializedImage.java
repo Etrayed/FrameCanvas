@@ -26,9 +26,12 @@ public record SerializedImage(int width, int height, Byte[] data) {
     public void displayAt(@NotNull Drawable drawable, @Nullable Player player, int startX, int startY) {
         Preconditions.checkNotNull(drawable, "drawable");
 
-        for (int x = startX; x < width; x++) {
-            for (int y = startY; y < height; y++) {
-                Byte color = data[y * width + x];
+        int boundX = startX + width;
+        int boundY = startY + height;
+
+        for (int x = startX, dataX = 0; x < boundX; x++, dataX++) {
+            for (int y = startY, dataY = 0; y < boundY; y++, dataY++) {
+                Byte color = data[dataY * width + dataX];
 
                 if(color != null) {
                     drawable.setPixel(player, x, y, color);
