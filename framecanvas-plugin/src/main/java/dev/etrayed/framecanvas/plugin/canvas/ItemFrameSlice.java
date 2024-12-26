@@ -52,6 +52,10 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
         this.y = y;
         this.global = global;
         this.listeners = new CopyOnWriteArrayList<>();
+
+        if (!global) {
+            contextualBuffer = Collections.synchronizedMap(new WeakHashMap<>());
+        }
     }
 
     @Override
@@ -98,6 +102,8 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
     @Override
     public @NotNull CompletableFuture<Void> displayImage(@Nullable Player player, @Range(from = 0, to = 126) int startX, @Range(from = 0, to = 126) int startY, @NotNull BufferedImage image) {
         Preconditions.checkNotNull(image, "image");
+
+        ensureBuffer();
 
         return CompletableFuture.runAsync(() -> {
             for (int x = startX; x < 128; x++) {
@@ -210,8 +216,6 @@ public class ItemFrameSlice extends MapRenderer implements CanvasSlice {
 
         if(global) {
             buffer = new DirtyBuffer();
-        } else {
-            contextualBuffer = Collections.synchronizedMap(new WeakHashMap<>());
         }
     }
 
