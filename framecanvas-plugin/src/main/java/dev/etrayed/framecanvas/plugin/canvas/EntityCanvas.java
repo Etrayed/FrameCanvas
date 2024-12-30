@@ -364,11 +364,11 @@ public class EntityCanvas implements Canvas {
             }
 
             MapView view = Bukkit.createMap(world);
-
             ItemStack mapStack = new ItemStack(Material.FILLED_MAP);
             MapMeta meta = (MapMeta) mapStack.getItemMeta();
 
             meta.setMapView(view);
+            meta.setScaling(false);
 
             mapStack.setItemMeta(meta);
 
